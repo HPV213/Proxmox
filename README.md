@@ -19,17 +19,23 @@ or
 wget -qO- https://raw.githubusercontent.com/HPV213/Proxmox/main/scripts/proxmox-lldp-uplink-comment.sh | bash
 ```
 
-## Hostname check / rename
+## Hostname check / fix / rename
 
-`scripts/proxmox-hostname-check.sh` checks that a node's hostname is configured
-correctly (based on <https://pve.proxmox.com/wiki/Renaming_a_PVE_node>):
-`/etc/hostname`, `/etc/hosts` (must map to the real IP, not loopback),
-`/etc/mailname`, postfix, `pve-cluster`, `/etc/pve/nodes/*`, corosync and RRD data.
+`scripts/proxmox-hostname-check.sh` checks, repairs and renames a PVE node
+(based on <https://pve.proxmox.com/wiki/Renaming_a_PVE_node>). Run as root on the node.
 
 ```sh
-bash proxmox-hostname-check.sh                  # check only
-bash proxmox-hostname-check.sh --rename NEW     # edit files (with .bak-rename backups), then reboot
-bash proxmox-hostname-check.sh --cleanup        # after reboot: move old node dir + RRD to new name
+# check only (read-only)
+curl -fsSL https://raw.githubusercontent.com/HPV213/Proxmox/main/scripts/proxmox-hostname-check.sh | bash
+
+# you already renamed by hand: move old node dir (VM/CT configs) + RRD, fix postfix
+curl -fsSL https://raw.githubusercontent.com/HPV213/Proxmox/main/scripts/proxmox-hostname-check.sh | bash -s -- --fix
+
+# fully automatic rename, no reboot needed
+curl -fsSL https://raw.githubusercontent.com/HPV213/Proxmox/main/scripts/proxmox-hostname-check.sh | bash -s -- --rename NEWNAME
 ```
 
-`--rename` refuses clustered nodes or nodes with VM/CT configs unless `--force` is given.
+Options: `--old NAME` (with `--fix`), `--force` (clustered node / node with guests), `-y` (no prompts).
+`--rename` backs up to `/root/pve-rename-backup-<timestamp>`, edits `/etc/hostname`, `/etc/hosts`,
+`/etc/mailname`, `/etc/postfix/main.cf`, restarts the PVE services, moves guest configs and RRD data.
+On any failure a detailed ERROR REPORT is printed at the end, ready to copy and paste.

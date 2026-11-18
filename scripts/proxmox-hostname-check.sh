@@ -133,7 +133,7 @@ do_check() {
     if in_cluster; then
       ok "other nodes present (cluster): ${stale[*]}"
     else
-      warn "stale node dir(s) left over: ${stale[*]}  -> run: $0 --cleanup"
+      warn "stale node dir(s) left over: ${stale[*]}  -> run this script with --cleanup"
     fi
   fi
   if in_cluster; then
@@ -221,15 +221,14 @@ do_cleanup() {
       mkdir -p "$dst/$sub"
       for f in "$src/$sub"/*; do
         [ -e "$f" ] || continue
-        cp -a "$f" "$dst/$sub/" && rm -f "$f" && echo "  moved $sub/$(basename "$f")"
+        mv "$f" "$dst/$sub/" && echo "  moved $sub/$(basename "$f")" || echo "  ${R}failed to move $f${N}"
       done
       rmdir "$src/$sub" 2>/dev/null || echo "  ${Y}could not remove $src/$sub (not empty)${N}"
     done
     # remaining top-level files
     for f in "$src"/*; do
       [ -f "$f" ] || continue
-      [ -e "$dst/$(basename "$f")" ] || cp -a "$f" "$dst/"
-      rm -f "$f"
+      [ -e "$dst/$(basename "$f")" ] && rm -f "$f" || mv "$f" "$dst/"
     done
     rmdir "$src" 2>/dev/null && echo "  removed $src" || echo "  ${Y}$src not empty, left in place - check manually${N}"
   else
